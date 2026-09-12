@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug lemon grammar.y",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/lemon",
+      "args": [
+        "${workspaceFolder}/book_grammar.y"
+      ],
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "/usr/bin/gdb",
+      "stopAtEntry": false,
+      "preLaunchTask": "Build lemon debug"
+    }
+  ]
+}

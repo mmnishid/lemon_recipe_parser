@@ -1,0 +1,106 @@
+I traced the exact build and launch path for this project and confirmed the debug target is the Lemon generator itself, not the generated grammar parser. I’m summarizing the steps and why they matter so you can follow the same flow in the debugger.
+
+## What I did, step by step
+
+I treated this as a debug setup problem for the parser generator, not for the generated runtime parser.
+
+### 1) Confirmed the actual program to debug
+This repo contains:
+- `lemon.c` — the Lemon parser generator implementation
+- `grammar.y` — the grammar input file that Lemon parses
+- `main.c` — a small generated-parser consumer, but not the thing that processes the grammar file
+
+The key fact is that Lemon is a compiler-like tool: it reads a grammar file and emits parser tables. So the correct debug target is the executable built from `lemon.c`, launched with `grammar.y` as input.
+
+---
+
+### 2) Built the generator in debug mode
+I verified the build command that produces a debuggable binary:
+
+```bash
+cd /home/mmnis/git/recipe_lemon_parser
+gcc -g -O0 -std=c11 -Wall -Wextra -o lemon lemon.c
+```
+
+This matters because:
+- `-g` includes debug symbols, so breakpoints and stack traces work
+- `-O0` disables optimization, making stepping through code much more reliable
+- `-std=c11` keeps it close to standard C behavior
+
+I also checked that the generated binary runs with the grammar file:
+
+```bash
+./lemon grammar.y
+```
+
+That succeeded with exit code `0`, confirming the project can be debugged as intended.
+
+---
+
+### 3) Identified the entry point
+In `lemon.c`, the main command-line program is:
+
+- `int main(int argc, char **argv);`
+
+This is the function that:
+- parses command-line options
+- reads the grammar filename argument
+- calls `Parse(&lem);`
+- builds the parser tables
+
+So if you want to trace how it reads `grammar.y`, the best breakpoints are near:
+- `main`
+- `Parse(&lem)`
+- grammar preprocessing and symbol parsing logic inside `lemon.c`
+
+---
+
+### 4) Created a debug task
+I added `tasks.json` to build the generator automatically before launching.
+
+That task runs exactly the same GCC command above, so the debugger always starts from a fresh binary with symbols.
+
+---
+
+### 5) Created a VS Code launch configuration
+I added `launch.json` with a configuration named:
+
+- “Debug lemon grammar.y”
+
+It launches:
+
+```json
+"program": "${workspaceFolder}/lemon",
+"args": ["${workspaceFolder}/grammar.y"]
+```
+
+and sets:
+- `cwd` to the project folder
+- `MIMode: "gdb"`
+- `preLaunchTask: "Build lemon debug"`
+
+That means VS Code:
+1. builds the debug binary,
+2. starts it with the grammar file,
+3. attaches GDB to the process,
+4. lets you step through `lemon.c` as it parses the grammar.
+
+---
+
+### 6) Why this is the correct debug setup
+The important distinction is:
+
+- `grammar.y` is not executed directly as a C program
+- `lemon.c` is the tool that interprets its grammar syntax
+- the generated parser in `grammar.c` is a separate output, not the parser generator itself
+
+So the debugger should attach to `lemon`, not to `main` or to the output parser from the grammar.
+
+---
+
+## In plain English
+I set up VS Code so that when you press Start Debugging, it will compile the Lemon parser generator with symbols, then execute it on `grammar.y`, letting you step through the code in `lemon.c` while it reads and processes the grammar.
+
+That’s the exact workflow needed to inspect how Lemon tokenizes, parses, and builds its parser state machine.
+
+If you want, I can next point out the exact breakpoints to set inside `lemon.c` so you can trace the grammar parse in a very focused way.
