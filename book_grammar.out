@@ -1,0 +1,108 @@
+State 0:
+          main ::= * expr_e
+          expr_e ::= * expr_e PLUS expr_t
+          expr_e ::= * expr_t
+          expr_t ::= * expr_t TIMES expr_f
+          expr_t ::= * expr_f
+          expr_f ::= * LPARREN expr_e RPARREN
+          expr_f ::= * INT
+
+                       LPARREN shift        1      
+                           INT shift-reduce 5      expr_f ::= INT
+                        expr_e shift        5      
+                        expr_t shift        6      
+                        expr_f shift-reduce 3      expr_t ::= expr_f
+                          main accept
+
+State 1:
+          expr_e ::= * expr_e PLUS expr_t
+          expr_e ::= * expr_t
+          expr_t ::= * expr_t TIMES expr_f
+          expr_t ::= * expr_f
+          expr_f ::= * LPARREN expr_e RPARREN
+          expr_f ::= LPARREN * expr_e RPARREN
+          expr_f ::= * INT
+
+                       LPARREN shift        1      
+                           INT shift-reduce 5      expr_f ::= INT
+                        expr_e shift        4      
+                        expr_t shift        6      
+                        expr_f shift-reduce 3      expr_t ::= expr_f
+
+State 2:
+          expr_e ::= expr_e PLUS * expr_t
+          expr_t ::= * expr_t TIMES expr_f
+          expr_t ::= * expr_f
+          expr_f ::= * LPARREN expr_e RPARREN
+          expr_f ::= * INT
+
+                       LPARREN shift        1      
+                           INT shift-reduce 5      expr_f ::= INT
+                        expr_t shift        7      
+                        expr_f shift-reduce 3      expr_t ::= expr_f
+
+State 3:
+          expr_t ::= expr_t TIMES * expr_f
+          expr_f ::= * LPARREN expr_e RPARREN
+          expr_f ::= * INT
+
+                       LPARREN shift        1      
+                           INT shift-reduce 5      expr_f ::= INT
+                        expr_f shift-reduce 2      expr_t ::= expr_t TIMES expr_f
+
+State 4:
+          expr_e ::= expr_e * PLUS expr_t
+          expr_f ::= LPARREN expr_e * RPARREN
+
+                          PLUS shift        2      
+                       RPARREN shift-reduce 4      expr_f ::= LPARREN expr_e RPARREN
+
+State 5:
+      (6) main ::= expr_e *
+          expr_e ::= expr_e * PLUS expr_t
+
+                             $ reduce       6      main ::= expr_e
+                          PLUS shift        2      
+
+State 6:
+      (1) expr_e ::= expr_t *
+          expr_t ::= expr_t * TIMES expr_f
+
+                         TIMES shift        3      
+                     {default} reduce       1      expr_e ::= expr_t
+
+State 7:
+      (0) expr_e ::= expr_e PLUS expr_t *
+          expr_t ::= expr_t * TIMES expr_f
+
+                         TIMES shift        3      
+                     {default} reduce       0      expr_e ::= expr_e PLUS expr_t
+
+----------------------------------------------------
+Symbols:
+The first-set of non-terminals is shown after the name.
+
+    0: $:
+    1: PLUS
+    2: TIMES
+    3: LPARREN
+    4: RPARREN
+    5: INT
+    6: expr_e: LPARREN INT
+    7: expr_t: LPARREN INT
+    8: expr_f: LPARREN INT
+    9: main: LPARREN INT
+----------------------------------------------------
+Syntax-only Symbols:
+The following symbols never carry semantic content.
+
+$ PLUS TIMES LPARREN RPARREN main
+----------------------------------------------------
+Rules:
+   0: expr_e ::= expr_e PLUS expr_t.
+   1: expr_e ::= expr_t.
+   2: expr_t ::= expr_t TIMES expr_f.
+   3: expr_t ::= expr_f.
+   4: expr_f ::= LPARREN expr_e RPARREN.
+   5: expr_f ::= INT.
+   6: main ::= expr_e.

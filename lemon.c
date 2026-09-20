@@ -321,12 +321,14 @@ enum symbol_type {
   NONTERMINAL,
   MULTITERMINAL
 };
+
 enum e_assoc {
     LEFT,
     RIGHT,
     NONE,
     UNK
 };
+
 struct symbol {
   const char *name;        /* Name of the symbol */
   int index;               /* Index number for this symbol */
@@ -390,6 +392,7 @@ enum cfgstatus {
   COMPLETE,
   INCOMPLETE
 };
+
 struct config {
   struct rule *rp;         /* The rule upon which the configuration is based */
   int dot;                 /* The parse point */
@@ -429,6 +432,7 @@ struct action {
   struct action *collide;  /* Next action with the same hash */
 };
 
+
 /* Each state of the generated parser's finite state machine
 ** is encoded as an instance of the following structure. */
 struct state {
@@ -442,6 +446,7 @@ struct state {
   struct rule *pDfltReduce;/* The default REDUCE rule. */
   int autoReduce;          /* True if this is an auto-reduce state */
 };
+
 #define NO_OFFSET (-2147483647)
 
 /* A followset propagation link indicates that the contents of one
@@ -450,7 +455,7 @@ struct state {
 struct plink {
   struct config *cfp;      /* The configuration to which linked */
   struct plink *next;      /* The next propagate link */
-};
+}; 
 
 /* The state vector for the entire parser generator is recorded as
 ** follows.  (LEMON uses no global variables and makes little use of
@@ -509,6 +514,7 @@ struct lemon {
   char **argv;             /* Command-line arguments */
 };
 
+
 #define MemoryCheck(X) if((X)==0){ \
   extern void memory_error(); \
   memory_error(); \
@@ -560,6 +566,223 @@ void Configtable_init(void);
 int Configtable_insert(struct config *);
 struct config *Configtable_find(struct config *);
 void Configtable_clear(int(*)(struct config *));
+
+/********** From MMN *************************************/
+void mmn_enum_symbol_type(enum symbol_type, char *);
+void mmn_enum_e_assoc(enum e_assoc , char *);
+void mmn_enum_cfgstatus(enum cfgstatus cfgstatus_, char *result);
+void mmn_enum_e_action(enum e_action e_action_, char *result);
+
+void mmn_printLemon(struct lemon *);
+void mmn_printConfig(struct config *, int, int);
+void mmn_printAction(struct action *);
+void mmn_printState(struct state *);
+void mmn_print_plink(struct plink *, int);
+void mmn_printSymbol(struct symbol *);
+void mmn_printRule(struct rule *);
+
+void mmn_enum_symbol_type(enum symbol_type symbol_type_, char *result) {
+  switch(symbol_type_) {
+    case TERMINAL:
+      sprintf(result, "TERMINAL");
+      break;
+    case NONTERMINAL:
+      sprintf(result, "NONTERMINAL");
+      break;
+    case MULTITERMINAL:
+      sprintf(result, "MULTITERMINAL");
+      break;
+    default:
+      sprintf(result, "");
+  }
+}
+void mmn_enum_e_assoc(enum e_assoc e_assoc_, char *result) {
+  switch(e_assoc_) {
+    case LEFT:
+      sprintf(result, "LEFT");
+      break;
+    case RIGHT:
+      sprintf(result, "RIGHT");
+      break;
+    case NONE:
+      sprintf(result, "NONE");
+      break;
+    case UNK:
+      sprintf(result, "UNK");
+      break;
+    default:
+      sprintf(result, "");
+  }
+}
+void mmn_enum_cfgstatus(enum cfgstatus cfgstatus_, char *result) {
+  switch(cfgstatus_) {
+    case COMPLETE:
+      sprintf(result, "COMPLETE");
+      break;
+    case INCOMPLETE:
+      sprintf(result, "INCOMPLETE");
+      break;
+    default:
+      sprintf(result, "");
+  }
+}
+void mmn_enum_e_action(enum e_action e_action_, char *result) {
+  switch(e_action_) {
+    case SHIFT:
+      sprintf(result, "SHIFT");
+      break;
+    case ACCEPT:
+      sprintf(result, "ACCEPT");
+      break;
+    case REDUCE:
+      sprintf(result, "REDUCE");
+      break;
+    case ERROR:
+      sprintf(result, "ERROR");
+      break;
+    case SSCONFLICT:
+      sprintf(result, "SSCONFLICT");
+      break;
+    case SRCONFLICT:
+      sprintf(result, "SRCONFLICT");
+      break;
+    case RRCONFLICT:
+      sprintf(result, "RRCONFLICT");
+      break;
+    case SH_RESOLVED:
+      sprintf(result, "SH_RESOLVED");
+      break;
+    case RD_RESOLVED:
+      sprintf(result, "RD_RESOLVED");
+      break;
+    case NOT_USED:
+      sprintf(result, "NOT_USED");
+      break;
+    case SHIFTREDUCE:
+      sprintf(result, "SHIFTREDUCE");
+      break;
+    default:
+      sprintf(result, "");
+  }
+}
+
+void mmn_printLemon(struct lemon *lemon_) {
+  printf("Lemon Struct \r\n");
+  printf("Lemon States, length: %d \r\n", 
+    lemon_->nstate);
+  for(int i=0; i<lemon_->nstate; i++){
+    if( lemon_->sorted[i] != 0 ) {
+      mmn_printState(lemon_->sorted[i]);
+    }
+  }
+  printf("Lemon Rules, length %d w/ actions %d: \r\n", 
+    lemon_->nrule, lemon_->nruleWithAction);
+  struct rule *rp;
+  for(rp=lemon_->rule; rp; rp=rp->next) {
+    if( rp != 0 ) {
+      mmn_printRule(rp);
+    }
+  }
+
+  printf("Lemon Start Rule: \r\n");
+  if( lemon_->startRule != 0 ) {
+    mmn_printRule(lemon_->startRule);
+  }
+  
+  printf("Lemon symbols, length: %d \r\n", 
+    lemon_->nsymbol);
+  for(int i=0; i<lemon_->nsymbol; i++) {
+    if( lemon_->symbols[i] != 0 ) {
+      mmn_printSymbol(lemon_->symbols[i]);
+    }
+  }
+
+}
+void mmn_printConfig(struct config *config_, int isCalledLink, int linkNumber) {
+  printf("config %d rule: \r\n", linkNumber);
+  mmn_printRule(config_->rp);
+  printf("dot number: %d \r\n", config_->dot);
+  printf("config Follow-set: %s\r\n", config_->fws);
+  if(isCalledLink == 0) {
+    printf("Follow-set forward propagation links: \r\n");
+    if(config_->fplp != NULL) {
+      mmn_print_plink(config_->fplp, 0);
+    }
+    
+    printf("Follow-set backwards propagation links: \r\n");
+    if(config_->bplp != NULL) {
+      mmn_print_plink(config_->bplp, 0);
+    }
+    
+  }
+}
+
+void mmn_printAction(struct action *action_) {
+  char buff[100];
+  mmn_enum_e_action(action_->type, buff);
+  printf("Action Type: %s, look ahead symbol: \r\n", buff);
+  mmn_printSymbol(action_->sp);
+  printf("symbol SHIFTREDUCE optimization: \r\n");
+  mmn_printSymbol(action_->spOpt);
+  if(action_->x.stp != 0) {
+    printf("The new state, if a shift: \r\n");
+    mmn_printState(action_->x.stp);
+  }
+  if(action_->x.rp != 0) {
+    printf("The new state, if a shift: \r\n");
+    mmn_printRule(action_->x.rp);
+  }
+}
+
+void mmn_printState(struct state *state_) {
+
+  printf("State number: %d, number of actions: %d \r\n", state_->statenum, state_->nNtAct);
+
+  printf("The basis configurations for this state \r\n");
+  mmn_printConfig(state_->bp, 0, 0);
+
+  printf("All configurations in this set \r\n");
+  struct config *cfp;
+  for(cfp=state_->cfp; cfp; cfp=cfp->next){  // Loop over all configurations 
+    mmn_printConfig(cfp, 0, 0);
+    if( cfp->rp->nrhs==cfp->dot ){        // Is dot at extreme right? 
+      printf("This dot is at extreme right \r\n");
+    }
+  }
+}
+
+void mmn_print_plink(struct plink *plink_, int linkNumber) {
+  
+  if(plink_->cfp != NULL) {
+    if(plink_->cfp->fws != NULL) {
+      printf("config Follow-set: %s\r\n", plink_->cfp->fws);
+    }
+    
+    mmn_printConfig(plink_->cfp, 1, linkNumber);
+  }
+  
+  if(plink_->next != NULL) {
+    mmn_print_plink(plink_->next, linkNumber + 1);
+  }
+}
+
+void mmn_printSymbol(struct symbol *symbol_){
+  char buff[100];
+  mmn_enum_symbol_type(symbol_->type, buff);
+  printf("symbol: %s, index %d, type %s, \r\n", 
+    symbol_->name, symbol_->index, buff);
+}
+
+void mmn_printRule(struct rule *rule_){
+  printf("rule %d, index: %d, line %d, left hand side: \r\n\t", rule_->iRule, rule_->index, rule_->line);
+  mmn_printSymbol(rule_->lhs);
+  printf("right hand side, size %d, rhs: \r\n", rule_->nrhs);
+  for(int i = 0; i < rule_->nrhs; i++) {
+    printf("\t");
+    mmn_printSymbol(rule_->rhs[i]);
+  }
+  printf("code: %s \r\n\n", rule_->code);
+}
 
 /****************** From the file "action.c" *******************************/
 /*
@@ -842,7 +1065,7 @@ int acttab_insert(acttab *p, int makeItSafe){
     }
   }
   /* Insert transaction set at index i. */
-#if 0
+#if 1
   printf("Acttab:");
   for(j=0; j<p->nLookahead; j++){
     printf(" %d", p->aLookahead[j].lookahead);
@@ -1809,6 +2032,7 @@ int main(int argc, char **argv){
 
   /* Parse the input file */
   Parse(&lem);
+  mmn_printLemon(&lem);
   if( lem.printPreprocessed || lem.errorcnt ) exit(lem.errorcnt);
   if( lem.nrule==0 ){
     fprintf(stderr,"Empty grammar.\n");
@@ -1847,41 +2071,54 @@ int main(int argc, char **argv){
   if( rpflag ){
     Reprint(&lem);
   }else{
+
+    mmn_printLemon(&lem);
+
     /* Initialize the size for all follow and first sets */
     SetSize(lem.nterminal+1);
+    mmn_printLemon(&lem);
 
     /* Find the precedence for every production rule (that has one) */
     FindRulePrecedences(&lem);
+    mmn_printLemon(&lem);
 
     /* Compute the lambda-nonterminals and the first-sets for every
     ** nonterminal */
     FindFirstSets(&lem);
+    mmn_printLemon(&lem);
 
     /* Compute all LR(0) states.  Also record follow-set propagation
     ** links so that the follow-set can be computed later */
     lem.nstate = 0;
     FindStates(&lem);
     lem.sorted = State_arrayof();
+    mmn_printLemon(&lem);
 
     /* Tie up loose ends on the propagation links */
     FindLinks(&lem);
+    mmn_printLemon(&lem);
 
     /* Compute the follow set of every reducible configuration */
     FindFollowSets(&lem);
+    mmn_printLemon(&lem);
 
     /* Compute the action tables */
     FindActions(&lem);
+    mmn_printLemon(&lem);
 
     /* Compress the action tables */
-    CompressTables(&lem);
+    //CompressTables(&lem);
+    mmn_printLemon(&lem);
 
     /* Reorder and renumber the states so that states with fewer choices
     ** occur at the end.  This is an optimization that helps make the
     ** generated parser tables smaller. */
     if( noResort==0 ) ResortStates(&lem);
+    mmn_printLemon(&lem);
 
     /* Generate a report of the parser generated.  (the "y.output" file) */
     if( !quiet ) ReportOutput(&lem);
+    mmn_printLemon(&lem);
 
     /* Generate the source code for the parser */
     ReportTable(&lem, mhflag, sqlFlag);
@@ -2376,7 +2613,7 @@ static void parseonetoken(struct pstate *psp)
 {
   const char *x;
   x = Strsafe(psp->tokenstart);     /* Save the token permanently */
-#if 0
+#if 1
   printf("%s:%d: Token=[%s] state=%d\n",psp->filename,psp->tokenlineno,
     x,psp->state);
 #endif
@@ -2391,6 +2628,7 @@ static void parseonetoken(struct pstate *psp)
       if( x[0]=='%' ){
         psp->state = WAITING_FOR_DECL_KEYWORD;
       }else if( ISLOWER(x[0]) ){
+        //mmn start of the new lhs rule
         psp->lhs = Symbol_new(x);
         psp->nrhs = 0;
         psp->lhsalias = 0;
@@ -2511,6 +2749,7 @@ static void parseonetoken(struct pstate *psp)
           rp->rhs = (struct symbol**)&rp[1];
           rp->rhsalias = (const char**)&(rp->rhs[psp->nrhs]);
           for(i=0; i<psp->nrhs; i++){
+            //
             rp->rhs[i] = psp->rhs[i];
             rp->rhsalias[i] = psp->alias[i];
             if( rp->rhsalias[i]!=0 ){ rp->rhs[i]->bContent = 1; }
@@ -2532,6 +2771,7 @@ static void parseonetoken(struct pstate *psp)
             psp->lastrule = rp;
           }
           psp->prevrule = rp;
+          mmn_printRule(rp);
         }
         psp->state = WAITING_FOR_DECL_OR_RULE;
       }else if( ISALPHA(x[0]) ){
@@ -3441,7 +3681,7 @@ void ConfigPrint(FILE *fp, struct config *cfp){
 }
 
 /* #define TEST */
-#if 0
+#if 1
 /* Print a set */
 PRIVATE void SetPrint(out,set,lemp)
 FILE *out;
@@ -3571,7 +3811,7 @@ void ReportOutput(struct lemon *lemp)
       }
       ConfigPrint(fp,cfp);
       fprintf(fp,"\n");
-#if 0
+#if 1
       SetPrint(fp,cfp->fws,lemp);
       PlinkPrint(fp,cfp->fplp,"To  ");
       PlinkPrint(fp,cfp->bplp,"From");
@@ -4729,7 +4969,7 @@ void ReportTable(
       if( stp->iNtOfst<mnNtOfst ) mnNtOfst = stp->iNtOfst;
       if( stp->iNtOfst>mxNtOfst ) mxNtOfst = stp->iNtOfst;
     }
-#if 0  /* Uncomment for a trace of how the yy_action[] table fills out */
+#if 1  /* Uncomment for a trace of how the yy_action[] table fills out */
     { int jj, nn;
       for(jj=nn=0; jj<pActtab->nAction; jj++){
         if( pActtab->aAction[jj].action<0 ) nn++;
